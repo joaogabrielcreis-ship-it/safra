@@ -1041,3 +1041,5 @@ document.addEventListener("visibilitychange", () => {
 });
 window.addEventListener("resize", () => { if (S.view === "mapa" && ZONES[S.zone].profile) renderMapa(); });
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(() => {});
+// é um app, não uma página: sem zoom de pinça (o iPhone ignora user-scalable=no, então bloqueia o gesto)
+for (const ev of ["gesturestart", "gesturechange", "gestureend"]) document.addEventListener(ev, (e) => e.preventDefault(), { passive: false });
