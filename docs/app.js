@@ -307,20 +307,56 @@ function renderAdega() {
     ${f.q || f.kind || f.zone || f.status ? "" : completeCard()}
     <div style="height:12px"></div>
     ${searchBox(f.q, "Vinho, produtor, uva, país, vão…")}
-    <div class="chips" id="fk">${chip("Todos", !f.kind, 'data-k=""')}${kinds.map((k) => chip(k, f.kind === k, `data-k="${k}"`, kindColor(k))).join("")}</div>
-    <div class="chips" id="fz">${chip("Qualquer lugar", !f.zone, 'data-z=""')}${chip("Climatizada", f.zone === "CLI", 'data-z="CLI"')}${chip("Ambiente", f.zone === "AMB", 'data-z="AMB"')}${chip("Sem posição", f.zone === "none", 'data-z="none"')}</div>
-    <div class="chips" id="fs">${[["urg", "Abrir primeiro"], ["nome", "Nome"], ["safra", "Safra"], ["preco", "Preço"], ["novo", "Recentes"]].map(([k, l]) => chip(l, f.sort === k, `data-s="${k}"`)).join("")}</div>
-    ${f.status ? `<div class="chips">${chip(`${JAN_LABEL[f.status]} ✕`, true, 'id="clrSt"')}</div>` : ""}
+    ${filterRow()}
     <div class="sect"><h2>${rows.length === all.length ? "Na adega" : "Resultado"}</h2><span>${rows.length} ${rows.length === 1 ? "rótulo" : "rótulos"}</span></div>
     ${rows.length ? `<div class="list">${rows.map((w) => wineRow(w)).join("")}</div>` : `<p class="empty">Nada encontrado.</p>`}`;
   const inp = $("input", root);
   inp.addEventListener("input", () => { S.f.q = inp.value; const pos = inp.selectionStart; renderAdega(); const ni = $("#v-adega input"); ni.focus(); ni.setSelectionRange(pos, pos); });
-  $$("#fk .chip", root).forEach((b) => b.addEventListener("click", () => { S.f.kind = b.dataset.k || null; renderAdega(); }));
-  $$("#fz .chip", root).forEach((b) => b.addEventListener("click", () => { S.f.zone = b.dataset.z || null; renderAdega(); }));
-  $$("#fs .chip", root).forEach((b) => b.addEventListener("click", () => { S.f.sort = b.dataset.s; renderAdega(); }));
-  $("#clrSt", root)?.addEventListener("click", () => { S.f.status = null; renderAdega(); });
+  bindFilterRow(root);
   $("#complete", root)?.addEventListener("click", () => openComplete());
   bindRows(root);
+}
+
+/* ================= FILTROS (um botão só, menos opções na tela) ================= */
+const SORTS = [["urg", "Abrir primeiro"], ["nome", "Nome"], ["safra", "Safra"], ["preco", "Preço"], ["novo", "Recentes"]];
+const ZONE_L = { CLI: "Climatizada", AMB: "Ambiente", none: "Sem posição" };
+const activeFilters = () => [
+  S.f.kind && { k: "kind", l: S.f.kind, dot: kindColor(S.f.kind) },
+  S.f.zone && { k: "zone", l: ZONE_L[S.f.zone] },
+  S.f.status && { k: "status", l: JAN_LABEL[S.f.status] },
+].filter(Boolean);
+function filterRow() {
+  const act = activeFilters();
+  return `<div class="chips" id="frow">
+    <button class="chip filterbtn" id="fopen" aria-pressed="${act.length > 0}"><svg class="i" viewBox="0 0 24 24" style="width:17px;height:17px"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Filtros${act.length ? `<span class="n">${act.length}</span>` : ""}</button>
+    ${act.map((a) => chip(`${a.l} ✕`, true, `data-clear="${a.k}"`, a.dot)).join("")}
+    <button class="chip" id="fsort">${esc(SORTS.find(([k]) => k === S.f.sort)[1])} ▾</button>
+  </div>`;
+}
+function bindFilterRow(root) {
+  $("#fopen", root).onclick = () => openFilters();
+  $("#fsort", root).onclick = () => openFilters();
+  $$("[data-clear]", root).forEach((b) => b.onclick = () => { S.f[b.dataset.clear] = null; renderAdega(); });
+}
+function openFilters() {
+  const all = cellar(), f = S.f;
+  const kinds = KIND_LIST.filter((k) => all.some((w) => w.k === k));
+  const n = all.filter((w) => (!f.kind || w.k === f.kind) && (!f.status || w.j?.status === f.status)
+    && (!f.zone || (f.zone === "none" ? !w.pos.length : w.pos.some((c) => c.startsWith(f.zone))))).length;
+  openSheet(`<p class="eyebrow">Adega</p><h2>Filtros</h2>
+    <p class="fgroup">Tipo</p><div class="chips wrapchips">${chip("Todos", !f.kind, 'data-fk=""')}${kinds.map((k) => chip(k, f.kind === k, `data-fk="${k}"`, kindColor(k))).join("")}</div>
+    <p class="fgroup">Onde está</p><div class="chips wrapchips">${chip("Qualquer lugar", !f.zone, 'data-fz=""')}${Object.entries(ZONE_L).map(([k, l]) => chip(l, f.zone === k, `data-fz="${k}"`)).join("")}</div>
+    <p class="fgroup">Quando abrir</p><div class="chips wrapchips">${chip("Todos", !f.status, 'data-fs=""')}${JAN_ORDER.map((st) => chip(JAN_LABEL[st], f.status === st, `data-fs="${st}"`, `var(${ST_VAR[st]})`)).join("")}</div>
+    <p class="fgroup">Ordenar por</p><div class="chips wrapchips">${SORTS.map(([k, l]) => chip(l, f.sort === k, `data-fo="${k}"`)).join("")}</div>
+    <div class="btnrow" style="margin-top:20px"><button class="btn" id="fclear">Limpar</button><button class="btn primary" id="fdone">Ver ${n} ${n === 1 ? "rótulo" : "rótulos"}</button></div>`, (root) => {
+    const set = (k, v) => { f[k] = v || null; renderAdega(); openFilters(); };
+    $$("[data-fk]", root).forEach((b) => b.onclick = () => set("kind", b.dataset.fk));
+    $$("[data-fz]", root).forEach((b) => b.onclick = () => set("zone", b.dataset.fz));
+    $$("[data-fs]", root).forEach((b) => b.onclick = () => set("status", b.dataset.fs));
+    $$("[data-fo]", root).forEach((b) => b.onclick = () => { f.sort = b.dataset.fo; renderAdega(); openFilters(); });
+    $("#fclear", root).onclick = () => { Object.assign(f, { kind: null, zone: null, status: null, sort: "urg" }); renderAdega(); openFilters(); };
+    $("#fdone", root).onclick = closeSheet;
+  });
 }
 
 /* ================= QUANDO ABRIR ================= */
@@ -404,7 +440,7 @@ function openWine(w, ctxCode) {
       ${unplaced(w) ? (() => { const sg = suggestSlot(w); return `${sg ? `<button class="btn primary small" id="placeSug" data-code="${sg.code}">Guardar em ${sg.code}</button>` : ""}<button class="btn small" id="place">${sg ? "Outro vão" : w.pos.length ? `Posicionar mais ${unplaced(w)}` : "Escolher posição"}</button>`; })() : ""}
     </div>` : "";
   openSheet(`
-    ${w.img ? `<img class="labelimg" src="${esc(w.img)}" alt="" onerror="this.remove()">` : ""}
+    ${w.img ? `<div class="labelbox"><img class="labelimg" src="${esc(w.img)}" alt="" onerror="this.parentNode.hidden = true"></div>` : ""}
     <p class="eyebrow">${esc([w.k, pais(w.c)].filter(Boolean).join(" · ") || "Vinho")}</p>
     <h2>${esc(w.n)}</h2>
     <p class="sub">${esc([w.w, w.s].filter(Boolean).join(" · "))}</p>
@@ -481,21 +517,23 @@ function openDrink(w, ctxCode) {
       const btn = e.submitter; btn.disabled = true; btn.textContent = "Gravando…"; $("#derr", root).textContent = "";
       const extra = $("#dpx", root).value.split(",").map((x) => x.trim()).filter(Boolean);
       const body = { id: w.id, code, date: $("#dd", root).value, where: $("#dw", root).value.trim(), people: [...sel, ...extra], nota, comment: $("#dc", root).value.trim() };
-      const offline = () => {
+      // a tela muda na hora; o Notion é gravado por trás (responder em menos de 400 ms)
+      drankLocally(w, code, body);
+      closeSheet();
+      const queue = () => {
         outbox.set([...outbox.get(), { opId: crypto.randomUUID?.() || String(Date.now()), path: "drink", body, label: w.n, at: new Date().toISOString() }]);
-        drankLocally(w, code, body);
-        closeSheet(); toast("Sem internet: guardado no celular, envio quando conectar.");
+        toast("Sem internet: guardado no celular, envio quando conectar.");
       };
-      if (!navigator.onLine) return offline();
+      if (!navigator.onLine) return queue();
+      toast("Saúde! Gravando no Notion…");
       try {
         const r = await api("drink", body);
-        closeSheet();
         toast("Registrado no Notion. Saúde!", false, r.undo ? { label: "Desfazer", fn: () => undoOp(r.undo, "Bebida desfeita, garrafa de volta na adega") } : null);
         refresh(true);
       } catch (err) {
-        if (err.net) return offline();
-        $("#derr", root).textContent = err.message + " Confira no Notion antes de repetir.";
-        btn.disabled = false; btn.textContent = "Registrar";
+        if (err.net) return queue();
+        toast(`Não gravou: ${err.message}`, true);
+        refresh(true);                                    // volta a tela ao que está no Notion
       }
     });
   });
@@ -607,7 +645,7 @@ function renderMapa() {
       for (let c = 0; c < Z.cols; c++) { const code = codeOf(z, c, r); rack += slotHtml(code, occ.get(code)); }
     }
     rack += `</div><div class="basket"><div class="cap">Cesto do fundo</div><div class="row">${[...Array(Z.basket)].map((_, i) => { const code = `${z}-CESTO${i + 1}`; return slotHtml(code, occ.get(code)); }).join("")}</div></div>`;
-  } else rack = `<div class="hexwrap" id="hexwrap"></div><div class="hexcols" id="hexcols"></div>`;
+  } else rack = `<div class="hexscroll" id="hexscroll"><div class="hexwrap" id="hexwrap"></div><div class="hexcols" id="hexcols"></div></div>`;
 
   const legend = S.color === "tipo"
     ? KIND_LIST.map((k) => `<span><i style="background:${kindColor(k)}"></i>${k}</span>`).join("")
@@ -642,7 +680,10 @@ function renderMapa() {
 function drawHex(root, z, occ) {
   const prof = ZONES[z].profile, n = prof.length;
   const host = $("#hexwrap", root), cols = $("#hexcols", root);
-  const cw = host.clientWidth || root.clientWidth || 340;
+  // vão com pelo menos 46 px de largura (alvo de toque confortável); se não couber, o desenho rola de lado
+  const avail = ($("#hexscroll", root)?.clientWidth || root.clientWidth || 340) - 32;
+  const cw = Math.max(avail, 46 * (1 + 0.75 * (n - 1)));
+  host.style.width = cols.style.width = cw + "px";
   const W = cw / (1 + 0.75 * (n - 1)), H = W * 0.8660254, GAP = 2.5;
   const off = (c) => (c % 2 ? H / 2 : 0);
   const totalH = Math.max(...prof.map((h, c) => h * H + off(c)));
@@ -880,20 +921,19 @@ function openEdit(w, { back, focus } = {}) {
       for (const k of Object.keys(orig)) { const v = $(`#e-${k}`, root).value.trim(); if (v !== String(orig[k])) fields[k] = ["grapes", "region"].includes(k) ? v.split(",").map((x) => x.trim()).filter(Boolean) : v; }
       if (isHad && nota !== (w.nota || "")) fields.nota = nota;
       if (!Object.keys(fields).length) return back ? back() : openWine(w);
-      const btn = e.submitter; btn.disabled = true; btn.textContent = "Gravando…";
-      try {
-        await api("update", { id: w.id, fields });
-        const num = (v) => (v === "" ? null : +v);
-        Object.assign(w, {
-          ...(fields.name != null && { n: fields.name }), ...(fields.winery != null && { w: fields.winery }), ...(fields.country != null && { c: fields.country || null }),
-          ...(fields.safra != null && { s: fields.safra || null }), ...(fields.value != null && { v: num(fields.value) }), ...(fields.vivino != null && { viv: num(fields.vivino) }),
-          ...(fields.abv != null && { abv: num(fields.abv) }), ...(fields.grapes && { g: fields.grapes }), ...(fields.region && { reg: fields.region }),
-          ...(fields.link != null && { link: fields.link }), ...(fields.comment != null && { com: fields.comment }), ...(fields.nota != null && { nota: fields.nota || null }),
-        });
-        if (isCellar(w)) w.j = janelaDe(w);
-        toast("Gravado no Notion"); render();
-        back ? back() : openWine(w);
-      } catch (err) { $("#eerr", root).textContent = err.message; btn.disabled = false; btn.textContent = "Salvar"; }
+      // aplica na tela já e grava por trás; se o Notion recusar, relê e avisa
+      const num = (v) => (v === "" ? null : +v);
+      Object.assign(w, {
+        ...(fields.name != null && { n: fields.name }), ...(fields.winery != null && { w: fields.winery }), ...(fields.country != null && { c: fields.country || null }),
+        ...(fields.safra != null && { s: fields.safra || null }), ...(fields.value != null && { v: num(fields.value) }), ...(fields.vivino != null && { viv: num(fields.vivino) }),
+        ...(fields.abv != null && { abv: num(fields.abv) }), ...(fields.grapes && { g: fields.grapes }), ...(fields.region && { reg: fields.region }),
+        ...(fields.link != null && { link: fields.link }), ...(fields.comment != null && { com: fields.comment }), ...(fields.nota != null && { nota: fields.nota || null }),
+      });
+      if (isCellar(w)) w.j = janelaDe(w);
+      render();
+      back ? back() : openWine(w);
+      try { await api("update", { id: w.id, fields }); toast("Gravado no Notion"); }
+      catch (err) { toast(`Não gravou: ${err.message}`, true); refresh(true); }
     });
   });
 }

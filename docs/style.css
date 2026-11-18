@@ -9,10 +9,10 @@
   --fill:rgba(120,120,128,.12); --fill2:rgba(120,120,128,.2);
   --accent:#a3224a; --accent-soft:rgba(163,34,74,.12); --on-accent:#fff; --accent-glow:rgba(163,34,74,.32);
   --mark:#c9952f; --mark-soft:rgba(201,149,47,.18); --mark-ink:#8a5d06;
-  --good:#248a3d; --warn:#b25000; --crit:#d70015; --keep:#2f62c8;
-  --k-tinto:#8e1f3d; --k-branco:#d9c169; --k-laranja:#e0832c; --k-rose:#ec9ab4;
-  --k-espumante:#b9a248; --k-fortificado:#5a2618; --k-sem:#a49a9c;
-  --s1:#a3224a; --s2:#2f62c8; --s3:#c9952f; --s4:#248a3d; --s5:#7a4fc8; --s6:#0f8a8a;
+  --good:oklch(56% .15 148); --warn:oklch(60% .16 55); --crit:oklch(55% .21 25); --keep:oklch(52% .16 262);
+  --k-tinto:oklch(40% .14 8); --k-branco:oklch(82% .11 95); --k-laranja:oklch(70% .15 60); --k-rose:oklch(76% .11 355);
+  --k-espumante:oklch(74% .11 100); --k-fortificado:oklch(34% .08 40); --k-sem:oklch(68% .015 0);
+  --s1:oklch(47% .16 6); --s2:oklch(52% .16 262); --s3:oklch(68% .13 80); --s4:oklch(56% .15 148); --s5:oklch(54% .16 300); --s6:oklch(56% .1 195);
   --serif:ui-serif,"New York","Iowan Old Style",Georgia,serif;
   --safe-b:env(safe-area-inset-bottom,0px); --safe-t:env(safe-area-inset-top,0px);
   color-scheme:light dark;
@@ -27,14 +27,14 @@
   --fill:rgba(118,118,128,.24); --fill2:rgba(118,118,128,.36);
   --accent:#ff6b8f; --accent-soft:rgba(255,107,143,.16); --on-accent:#2a0410; --accent-glow:rgba(255,107,143,.25);
   --mark:#f2b54f; --mark-soft:rgba(242,181,79,.18); --mark-ink:#f6c77a;
-  --good:#30d158; --warn:#ffb340; --crit:#ff6961; --keep:#6aa0ff;
-  --k-tinto:#c43a62; --k-fortificado:#9a5638;
-  --s1:#ff6b8f; --s2:#6aa0ff; --s3:#f2b54f; --s4:#30d158; --s5:#b49bff; --s6:#40c8c8;
+  --good:oklch(77% .17 148); --warn:oklch(80% .15 75); --crit:oklch(70% .17 25); --keep:oklch(72% .13 262);
+  --k-tinto:oklch(58% .16 8); --k-fortificado:oklch(52% .1 40);
+  --s1:oklch(72% .15 6); --s2:oklch(72% .13 262); --s3:oklch(80% .13 80); --s4:oklch(77% .17 148); --s5:oklch(74% .13 300); --s6:oklch(78% .1 195);
 }}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 html,body{overflow-x:hidden;-webkit-text-size-adjust:100%}
 html{background:var(--bg);min-height:100%;touch-action:pan-x pan-y}
-body{margin:0;min-height:100vh;color:var(--ink);font:17px/1.35 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;-webkit-font-smoothing:antialiased;
+body{margin:0;min-height:100dvh;color:var(--ink);font:17px/1.35 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;-webkit-font-smoothing:antialiased;
   background:radial-gradient(60vmax 50vmax at 100% -10%,var(--blob1),transparent 60%),radial-gradient(50vmax 50vmax at -10% 40%,var(--blob2),transparent 60%),var(--bg);
   background-attachment:fixed}
 [hidden]{display:none!important}
@@ -98,7 +98,9 @@ main{padding:0 16px calc(120px + var(--safe-b))}
 .search svg.i{color:var(--muted);width:20px;height:20px}
 .search input{flex:1;min-width:0;height:42px;padding:0;background:none;border:0;outline:none;font-size:17px}
 .search input::-webkit-search-cancel-button{display:none}
-.chips{display:flex;gap:8px;overflow-x:auto;margin:0 -16px;padding:2px 16px 10px;scrollbar-width:none}
+.chips{display:flex;gap:8px;overflow-x:auto;margin:0 -16px;padding:2px 16px 10px;scrollbar-width:none;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 28px),transparent)}
+.chips.wrapchips{-webkit-mask-image:none;mask-image:none}
 .chips::-webkit-scrollbar{display:none}
 .chip{flex:none;height:36px;border:.5px solid var(--glass-edge);background:var(--glass-strong);border-radius:18px;padding:0 14px;font-size:15px;font-weight:500;white-space:nowrap;display:inline-flex;align-items:center;gap:7px;box-shadow:var(--hi);color:var(--ink)}
 .chip[aria-pressed="true"],.chip.on{background:var(--accent);border-color:transparent;color:var(--on-accent);font-weight:600}
@@ -118,7 +120,7 @@ main{padding:0 16px calc(120px + var(--safe-b))}
 .stat .n{font-size:12px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .stat.tap{cursor:pointer}
 .hero{border-radius:28px;padding:18px;color:#fff;position:relative;overflow:hidden;
-  background:linear-gradient(140deg,#b8325a,#7a1534 60%,#3e0918);box-shadow:0 14px 34px rgba(122,21,52,.35),inset 0 1px 0 rgba(255,255,255,.25)}
+  background:linear-gradient(140deg in oklch,oklch(53% .17 5),oklch(38% .14 8) 60%,oklch(24% .08 10));box-shadow:0 14px 34px rgba(122,21,52,.35),inset 0 1px 0 rgba(255,255,255,.25)}
 .hero::after{content:"";position:absolute;right:-40px;top:-60px;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.22),transparent 65%)}
 .hero .big{font-size:44px;font-weight:700;letter-spacing:-.02em;line-height:1;font-variant-numeric:tabular-nums}
 .hero .lbl{font-size:15px;opacity:.85;margin-top:4px}
@@ -177,11 +179,11 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 2px var(--accent)}
 .stars button[aria-pressed="true"]{background:var(--mark);color:#2a1a00}
 
 /* ---------- folha ---------- */
-.sheetbg{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.28);opacity:0;transition:opacity .2s}
+.sheetbg{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.28);opacity:0;transition:opacity .18s}
 .sheetbg.on{opacity:1}
 .sheet{position:fixed;left:0;right:0;bottom:0;z-index:51;max-height:calc(100dvh - var(--safe-t) - 24px);overflow:auto;overscroll-behavior:contain;
   background:var(--bg);border-radius:32px 32px 0 0;padding:10px 18px calc(var(--safe-b) + 24px);max-width:720px;margin:0 auto;
-  transform:translateY(100%);transition:transform .32s cubic-bezier(.2,.9,.25,1);box-shadow:var(--glass-shadow)}
+  transform:translateY(100%);transition:transform .26s cubic-bezier(.2,.9,.25,1);box-shadow:var(--glass-shadow)}
 .sheet.on{transform:none}
 .grip{width:38px;height:5px;border-radius:3px;background:var(--fill2);margin:0 auto 12px}
 .sheet h2{margin:2px 4px 2px;font-size:24px;line-height:1.2;font-weight:700;font-family:var(--serif)}
@@ -198,7 +200,8 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 2px var(--accent)}
 .jan summary{font-size:14px;color:var(--accent);font-weight:600;cursor:pointer;margin-top:8px}
 .posrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .poschip{display:inline-flex;align-items:center;gap:7px;background:var(--fill);border-radius:12px;padding:8px 11px}
-.labelimg{display:block;width:100%;max-height:260px;object-fit:contain;border-radius:20px;background:var(--fill);margin:0 0 12px}
+.labelbox{background:#f4eee8;border-radius:14px;margin:0 0 12px;padding:8px;display:flex;justify-content:center}
+.labelimg{display:block;max-width:100%;max-height:260px;object-fit:contain;mix-blend-mode:multiply}
 .comment{font:16px/1.5 var(--serif);color:var(--ink2);margin:0}
 
 /* ---------- mapa da adega ---------- */
@@ -215,12 +218,12 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 2px var(--accent)}
 .slot.dim{opacity:.22}
 .slot.sel{outline:3px solid var(--accent);outline-offset:1px;z-index:2}
 .slot.target{border:2px solid var(--accent);background:var(--accent-soft)}
-.slot.flash{animation:flash 1.2s ease-in-out 2}
-@keyframes flash{50%{transform:scale(1.12);box-shadow:0 0 0 4px var(--accent)}}
+.slot.flash{animation:flash .9s ease-out 1;box-shadow:0 0 0 3px var(--accent)}
+@keyframes flash{0%{box-shadow:0 0 0 0 var(--accent)}40%{box-shadow:0 0 0 6px var(--accent)}100%{box-shadow:0 0 0 3px var(--accent)}}
 .basket{margin-top:12px}
 .basket .lbl{font-size:13px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin:0 2px 8px}
 .basket .row{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
-.basket .slot{min-height:48px}
+.basket .slot{min-height:48px;border-radius:14px}
 .hexwrap{position:relative;width:100%}
 .hex{position:absolute;clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%);border:none;border-radius:0;padding:0;align-items:center;justify-content:center;text-align:center;min-height:0}
 .hex .c{font-size:8px}
@@ -302,15 +305,29 @@ button.barrow:active{opacity:.6}
 #scanOut:not(:empty){margin-top:12px}
 .scanning p{margin:12px 0 0;font-size:15px;color:var(--ink2);display:flex;gap:10px;align-items:center}
 .thumbs{display:flex;gap:8px;overflow-x:auto}
-.thumbs i{flex:none;width:64px;height:84px;border-radius:12px;background:var(--fill) center/cover no-repeat}
+.thumbs i{flex:none;width:64px;height:84px;border-radius:8px;background:var(--fill) center/cover no-repeat}
 .spin{flex:none;width:18px;height:18px;border-radius:50%;border:2.5px solid var(--fill2);border-top-color:var(--accent);animation:spin .8s linear infinite}
 .result h3{font-size:19px;line-height:1.25}
 .result .btnrow .btn{flex:0 0 auto}
 
 /* ---------- chamadas (completar, avisos) ---------- */
 .cta{display:grid;grid-template-columns:44px 1fr;gap:14px;align-items:center;width:100%;margin-top:12px;text-align:left}
-.cta-ico{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:var(--mark-soft);color:var(--mark-ink)}
+.cta-ico{width:44px;height:44px;border-radius:10px;display:grid;place-items:center;background:var(--mark-soft);color:var(--mark-ink)}
 .cta strong{display:block;font-size:16px}
 .cta .m{display:block;font-size:14px;color:var(--muted);margin-top:2px}
 .tonight{margin-bottom:6px}
 .tonight .rank .m{-webkit-line-clamp:2;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden}
+
+/* ---------- cantos "squircle" (Chrome/Edge hoje; o Safari usa o arredondado comum) ---------- */
+@supports (corner-shape: squircle) {
+  .card,.hero,.list,.facts,.jan,.basket,.sheet,.slot:not(.hex),.search,.stat,.bottle,.scan-ico,.cta-ico,.thumbs i,
+  .labelbox,.poschip,input,select,textarea,.movebar,.toast,.outbox{corner-shape:squircle}
+}
+/* ---------- mapa ambiente: vãos com no mínimo ~44 px, rolando de lado se precisar ---------- */
+.hexscroll{overflow-x:auto;margin:0 -16px;padding:0 16px;scrollbar-width:none}
+.hexscroll::-webkit-scrollbar{display:none}
+.hexscroll .hexwrap,.hexscroll .hexcols{min-width:0}
+/* ---------- filtros da adega ---------- */
+.filterbtn .n{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:var(--accent);color:var(--on-accent);font-size:12px;font-weight:700}
+.chip[aria-pressed="true"] .n{background:var(--on-accent);color:var(--accent)}
+.fgroup{margin:16px 4px 8px;font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}

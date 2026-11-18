@@ -1,6 +1,6 @@
 // Guarda o app no aparelho para abrir rápido e sem internet.
 // Os dados vêm de /api e nunca passam por este cache (o app guarda a última leitura sozinho).
-const VERSION = "safra-v5";
+const VERSION = "safra-v6";
 const SHELL = ["./", "index.html", "style.css", "app.js", "janela.js", "stats.js", "manifest.webmanifest", "icons/icon.svg", "icons/icon-192.png"];
 
 self.addEventListener("install", (e) => {
