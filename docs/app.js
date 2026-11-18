@@ -180,7 +180,6 @@ function syncLabel() {
     abrir: ["pela janela estimada de cada vinho"],
     mapa: ["toque num vão para ver ou mover"],
     num: ["o que entra, sai e fica"],
-    novo: ["cadastra direto no Notion"],
   };
   $("#viewSub").textContent = (subs[S.view] || []).filter(Boolean).join(" · ");
 }
@@ -217,20 +216,19 @@ $("#loginForm").addEventListener("submit", async (e) => {
 });
 
 /* ================= navegação ================= */
-const TITLES = { adega: "Adega", abrir: "Quando abrir", mapa: "Posições", novo: "Nova garrafa", num: "Números" };
+const TITLES = { adega: "Adega", abrir: "Quando abrir", mapa: "Posições", num: "Números" };
 function go(v, opts = {}) {
   S.view = v;
   $$(".tabbar button").forEach((b) => b.classList.toggle("on", b.dataset.v === v));
   $$(".view").forEach((s) => (s.hidden = s.id !== "v-" + v));
   $("#viewTitle").textContent = TITLES[v];
-  $("#newBtn").hidden = v === "novo";
   $("#bellBtn").hidden = v !== "adega";
   render();
   if (!opts.keepScroll) window.scrollTo(0, 0);
 }
 $$(".tabbar button").forEach((b) => b.addEventListener("click", () => { if (b.dataset.v !== "mapa") S.move = null; go(b.dataset.v); }));
 $("#syncBtn").addEventListener("click", () => refresh());
-$("#newBtn").addEventListener("click", () => { S.move = null; go("novo"); });
+$("#newBtn").addEventListener("click", () => { haptic(); openNovo(); });
 $("#bellBtn").addEventListener("click", openNotify);
 $("#outbox").addEventListener("click", flushOutbox);
 window.addEventListener("scroll", () => $(".head").classList.toggle("scrolled", window.scrollY > 8), { passive: true });
@@ -239,7 +237,6 @@ function render() {
   if (S.view === "adega") renderAdega();
   else if (S.view === "abrir") renderAbrir();
   else if (S.view === "mapa") renderMapa();
-  else if (S.view === "novo") renderNovo();
   else if (S.view === "num") renderNum($("#v-num"), H);
   syncLabel();
 }
@@ -349,11 +346,11 @@ function openFilters() {
     <p class="fgroup">Quando abrir</p><div class="chips wrapchips">${chip("Todos", !f.status, 'data-fs=""')}${JAN_ORDER.map((st) => chip(JAN_LABEL[st], f.status === st, `data-fs="${st}"`, `var(${ST_VAR[st]})`)).join("")}</div>
     <p class="fgroup">Ordenar por</p><div class="chips wrapchips">${SORTS.map(([k, l]) => chip(l, f.sort === k, `data-fo="${k}"`)).join("")}</div>
     <div class="btnrow" style="margin-top:20px"><button class="btn" id="fclear">Limpar</button><button class="btn primary" id="fdone">Ver ${n} ${n === 1 ? "rótulo" : "rótulos"}</button></div>`, (root) => {
-    const set = (k, v) => { f[k] = v || null; renderAdega(); openFilters(); };
+    const set = (k, v) => { haptic(); f[k] = v || null; renderAdega(); openFilters(); };
     $$("[data-fk]", root).forEach((b) => b.onclick = () => set("kind", b.dataset.fk));
     $$("[data-fz]", root).forEach((b) => b.onclick = () => set("zone", b.dataset.fz));
     $$("[data-fs]", root).forEach((b) => b.onclick = () => set("status", b.dataset.fs));
-    $$("[data-fo]", root).forEach((b) => b.onclick = () => { f.sort = b.dataset.fo; renderAdega(); openFilters(); });
+    $$("[data-fo]", root).forEach((b) => b.onclick = () => { haptic(); f.sort = b.dataset.fo; renderAdega(); openFilters(); });
     $("#fclear", root).onclick = () => { Object.assign(f, { kind: null, zone: null, status: null, sort: "urg" }); renderAdega(); openFilters(); };
     $("#fdone", root).onclick = closeSheet;
   });
@@ -382,9 +379,29 @@ function renderAbrir() {
 }
 
 /* ================= FICHA ================= */
+// vibração curta: Android usa vibrate; no iPhone (iOS 18+) tocar num switch escondido dá o "tique" do sistema
+const haptic = (() => {
+  let lab;
+  return () => {
+    try {
+      if (navigator.vibrate) return void navigator.vibrate(8);
+      if (!lab) {
+        lab = document.createElement("label"); lab.setAttribute("aria-hidden", "true");
+        lab.style.cssText = "position:fixed;left:-200px;top:0;width:1px;height:1px;overflow:hidden;opacity:0";
+        const i = document.createElement("input"); i.type = "checkbox"; i.setAttribute("switch", ""); i.tabIndex = -1;
+        lab.appendChild(i); document.body.appendChild(lab);
+      }
+      lab.click();
+    } catch {}
+  };
+})();
+let novoEl = null;                                       // o formulário de nova garrafa sobrevive a fechar a folha
 function openSheet(html, onMount) {
   const sh = $("#sheet"), bg = $("#sheetBg");
+  novoEl?.remove();
   $("#sheetBody").innerHTML = html;
+  const m = $("main"); m.style.transformOrigin = `50% ${window.scrollY + innerHeight / 2}px`;
+  document.body.classList.add("sheeted");
   sh.hidden = false; bg.hidden = false; sh.scrollTop = 0;
   requestAnimationFrame(() => { sh.classList.add("on"); bg.classList.add("on"); });
   document.body.style.overflow = "hidden";
@@ -393,6 +410,7 @@ function openSheet(html, onMount) {
 function closeSheet() {
   const sh = $("#sheet"), bg = $("#sheetBg");
   sh.classList.remove("on"); bg.classList.remove("on");
+  document.body.classList.remove("sheeted");
   document.body.style.overflow = "";
   setTimeout(() => { if (!sh.classList.contains("on")) { sh.hidden = true; bg.hidden = true; } }, 260);
 }
@@ -402,7 +420,7 @@ $("#sheetBg").addEventListener("click", closeSheet);
   let y0 = null, dy = 0; const sh = $("#sheet");
   sh.addEventListener("touchstart", (e) => { if (sh.scrollTop <= 0) { y0 = e.touches[0].clientY; dy = 0; } }, { passive: true });
   sh.addEventListener("touchmove", (e) => { if (y0 == null) return; dy = e.touches[0].clientY - y0; if (dy > 0) { sh.style.transition = "none"; sh.style.transform = `translateY(${dy}px)`; } }, { passive: true });
-  sh.addEventListener("touchend", () => { if (y0 == null) return; sh.style.transition = ""; sh.style.transform = ""; if (dy > 110) closeSheet(); y0 = null; });
+  sh.addEventListener("touchend", () => { if (y0 == null) return; sh.style.transition = ""; sh.style.transform = ""; if (dy > 110) { haptic(); closeSheet(); } y0 = null; });
 })();
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeSheet(); });
 
@@ -518,6 +536,7 @@ function openDrink(w, ctxCode) {
       const extra = $("#dpx", root).value.split(",").map((x) => x.trim()).filter(Boolean);
       const body = { id: w.id, code, date: $("#dd", root).value, where: $("#dw", root).value.trim(), people: [...sel, ...extra], nota, comment: $("#dc", root).value.trim() };
       // a tela muda na hora; o Notion é gravado por trás (responder em menos de 400 ms)
+      haptic();
       drankLocally(w, code, body);
       closeSheet();
       const queue = () => {
@@ -556,6 +575,7 @@ function startMove(w, from) {
   toast(from ? `Toque no vão de destino para ${from}` : "Toque num vão livre");
 }
 async function savePositions(changes, okMsg) {
+  haptic();
   // aplica já na tela e grava no Notion; se falhar, relê do Notion
   for (const ch of changes) {
     const w = byId(ch.id); if (!w) continue;
@@ -714,10 +734,11 @@ function bindTag(root, id) {
   inp.addEventListener("change", add);
   return () => { add(); return vals; };
 }
-function renderNovo() {
-  const root = $("#v-novo");
-  if (root.dataset.ready) return;                       // mantém o que foi digitado ao trocar de aba
-  root.dataset.ready = "1";
+function openNovo() {
+  if (!novoEl) { novoEl = document.createElement("div"); renderNovo(novoEl); }   // mantém o que foi digitado
+  openSheet(`<p class="eyebrow">Adega</p><h2>Nova garrafa</h2><p class="sub">Por foto ou à mão, direto no Notion.</p>`, (root) => root.appendChild(novoEl));
+}
+function renderNovo(root) {
   const o = S.opts || store.get(OPTS_KEY) || {};
   const countries = (o.country?.length ? o.country : [...new Set(S.wines.map((w) => w.c).filter(Boolean))]).slice().sort((a, b) => (PT[a] || a).localeCompare(PT[b] || b));
   const grapes = o.grapes?.length ? o.grapes : [...new Set(S.wines.flatMap((w) => w.g))].sort();
@@ -784,7 +805,8 @@ function renderNovo() {
     };
     try {
       const r = await api("wine", body);
-      delete root.dataset.ready;
+      haptic();
+      novoEl = null;
       toast("Garrafa cadastrada no Notion", false, { label: "Desfazer", fn: () => undoOp(r.undo, "Cadastro desfeito") });
       await refresh(true);
       go("adega");
