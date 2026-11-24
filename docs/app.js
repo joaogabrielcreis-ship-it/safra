@@ -24,7 +24,7 @@ const store = {
 const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const ZONES = {
   CLI: { label: "Climatizada", cols: 5, rows: 5, basket: 7 },
-  AMB: { label: "Ambiente", profile: [6, 6, 6, 6, 6, 4, 4, 3, 3, 2, 2, 1, 1] },
+  AMB: { label: "Ambiente", profile: [6, 6, 6, 6, 6, 5, 4, 3, 3, 2, 2, 1, 1] },
 };
 const codeOf = (z, c, r) => `${z}-${LETTERS[c]}${r + 1}`;
 function codesOf(z) {
